@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Swipeable } from "react-native-gesture-handler";
 import {
   StyleSheet,
   Text,
@@ -6,7 +9,10 @@ import {
   Button,
   TextInput,
   FlatList,
-  TouchableOpacity
+  TouchableOpacity,
+  Platform,
+  StatusBar,
+  SafeAreaView,
 } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -15,21 +21,48 @@ export default function App() {
   const Stack = createNativeStackNavigator();
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Page1">
-        <Stack.Screen
-          name="Page1"
-          component={Page1}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="Page2" component={Page2} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Page1">
+          <Stack.Screen
+            name="Page1"
+            component={Page1}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Page2"
+            component={Page2}
+            options={{
+              headerShown: true,
+              title: "Note", // Setting title to "Note"
+              headerStyle: {
+                backgroundColor: "#1F1F1F",
+              },
+              headerTintColor: "#FFFFFF",
+              headerTitleStyle: {
+                fontSize: 24,
+              },
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
 
 const Page1 = ({ navigation, route }) => {
   const [list, setList] = useState([]);
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const savedNotes = await AsyncStorage.getItem("notes");
+      if (savedNotes) {
+        setList(JSON.parse(savedNotes));
+      }
+    };
+
+    fetchNotes();
+  }, []);
 
   useEffect(() => {
     if (route.params?.updatedNote && typeof route.params?.index === "number") {
@@ -43,8 +76,29 @@ const Page1 = ({ navigation, route }) => {
     }
   }, [route.params]);
 
+  useEffect(() => {
+    AsyncStorage.setItem("notes", JSON.stringify(list));
+  }, [list]);
+
+  const handleDelete = (index) => {
+    const newList = [...list];
+    newList.splice(index, 1);
+    setList(newList);
+  };
+
+  const renderRightActions = (index) => {
+    return (
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDelete(index)}
+      >
+        <Text style={styles.deleteText}>Delete</Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Your Notes</Text>
         <TouchableOpacity
@@ -57,20 +111,22 @@ const Page1 = ({ navigation, route }) => {
       <FlatList
         data={list}
         renderItem={({ item, index }) => (
-          <View style={styles.noteContainer}>
-            <Text
-              style={styles.noteHeader}
-              onPress={() =>
-                navigation.navigate("Page2", { note: item, index })
-              }
-            >
-              {item.header}
-            </Text>
-          </View>
+          <Swipeable renderRightActions={() => renderRightActions(index)}>
+            <View style={styles.noteContainer}>
+              <Text
+                style={styles.noteHeader}
+                onPress={() =>
+                  navigation.navigate("Page2", { note: item, index })
+                }
+              >
+                {item.header}
+              </Text>
+            </View>
+          </Swipeable>
         )}
         keyExtractor={(item, index) => index.toString()}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -81,16 +137,18 @@ const Page2 = ({ navigation, route }) => {
   const index = route.params?.index;
 
   return (
-    <View style={styles.page2Container}>
+    <SafeAreaView style={styles.page2Container}>
       <TextInput
         placeholder="Header"
         style={styles.input}
+        placeholderTextColor="white"
         onChangeText={(text) => setNote({ ...note, header: text })}
         value={note.header}
       />
       <TextInput
         placeholder="Details"
         style={styles.detailsInput}
+        placeholderTextColor="white"
         onChangeText={(text) => setNote({ ...note, details: text })}
         value={note.details}
         multiline={true}
@@ -108,7 +166,7 @@ const Page2 = ({ navigation, route }) => {
       >
         <Text style={styles.buttonText}>Save Note</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -149,6 +207,7 @@ const styles = StyleSheet.create({
     margin: 10,
     fontSize: 16,
     color: "#FFFFFF",
+    height: 50,
   },
   page2Container: {
     flex: 1,
@@ -178,5 +237,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
+  },
+  deleteButton: {
+    backgroundColor: "red",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    width: 100,
+    height: "100%",
+  },
+  deleteText: {
+    color: "white",
+    padding: 20,
   },
 });
