@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Swipeable } from "react-native-gesture-handler";
+import styles from "./AppStyles";
 import {
   StyleSheet,
   Text,
@@ -16,6 +17,16 @@ import {
 } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
+function formatDate(date) {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${day}-${month}-${year} ${hours}:${minutes}`;
+}
 
 export default function App() {
   const Stack = createNativeStackNavigator();
@@ -34,7 +45,7 @@ export default function App() {
             component={Page2}
             options={{
               headerShown: true,
-              title: "Note", // Setting title to "Note"
+              title: "Note",
               headerStyle: {
                 backgroundColor: "#1F1F1F",
               },
@@ -68,11 +79,19 @@ const Page1 = ({ navigation, route }) => {
     if (route.params?.updatedNote && typeof route.params?.index === "number") {
       setList((prevList) => {
         const newList = [...prevList];
-        newList[route.params.index] = route.params.updatedNote;
+        const updatedNote = {
+          ...route.params.updatedNote,
+          lastModified: formatDate(new Date()),
+        };
+        newList[route.params.index] = updatedNote;
         return newList;
       });
     } else if (route.params?.note) {
-      setList((prevList) => [...prevList, route.params.note]);
+      const newNote = {
+        ...route.params.note,
+        lastModified: formatDate(new Date()),
+      };
+      setList((prevList) => [...prevList, newNote]);
     }
   }, [route.params]);
 
@@ -100,7 +119,7 @@ const Page1 = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Your Notes</Text>
+        <Text style={styles.headerText}>MyNotebook App</Text>
         <TouchableOpacity
           style={styles.button}
           onPress={() => navigation.navigate("Page2")}
@@ -112,16 +131,27 @@ const Page1 = ({ navigation, route }) => {
         data={list}
         renderItem={({ item, index }) => (
           <Swipeable renderRightActions={() => renderRightActions(index)}>
-            <View style={styles.noteContainer}>
-              <Text
-                style={styles.noteHeader}
-                onPress={() =>
-                  navigation.navigate("Page2", { note: item, index })
-                }
-              >
-                {item.header}
-              </Text>
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.6}
+              onPress={() =>
+                navigation.navigate("Page2", { note: item, index })
+              }
+            >
+              <View style={styles.noteContainer}>
+                <View style={styles.noteInnerContainer}>
+                  <Text
+                    style={styles.noteHeader}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.header}
+                  </Text>
+                  <Text style={styles.lastModifiedText}>
+                    Last Modified: {item.lastModified}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
           </Swipeable>
         )}
         keyExtractor={(item, index) => index.toString()}
@@ -136,17 +166,37 @@ const Page2 = ({ navigation, route }) => {
   );
   const index = route.params?.index;
 
+  // Function to add bullet points to each line in details
+  const addBulletPoints = () => {
+    const formattedDetails = note.details
+      .split("\n")
+      .map((line) => {
+        if (line.startsWith("  • ")) {
+          return line;
+        }
+        return `  • ${line}`;
+      })
+      .join("\n");
+
+    setNote({
+      ...note,
+      details: formattedDetails,
+    });
+  };
+
+  const isNoteValid = note.header.trim() !== "" && note.details.trim() !== "";
+
   return (
     <SafeAreaView style={styles.page2Container}>
       <TextInput
-        placeholder="Header"
+        placeholder="Enter Note Header...."
         style={styles.input}
         placeholderTextColor="white"
         onChangeText={(text) => setNote({ ...note, header: text })}
         value={note.header}
       />
       <TextInput
-        placeholder="Details"
+        placeholder="Enter Note Details...."
         style={styles.detailsInput}
         placeholderTextColor="white"
         onChangeText={(text) => setNote({ ...note, details: text })}
@@ -154,100 +204,41 @@ const Page2 = ({ navigation, route }) => {
         multiline={true}
         numberOfLines={6}
       />
+      <View style={styles.formattingButtonsContainer}>
+        <TouchableOpacity
+          style={styles.formattingButton}
+          onPress={addBulletPoints}
+        >
+          <Text style={styles.buttonText}>Add •</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.formattingButton}
+          onPress={() => console.log("Dummy button pressed")}
+        >
+          <Text style={styles.buttonText}>Italicize</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.formattingButton}
+          onPress={() => console.log("Dummy button pressed")}
+        >
+          <Text style={styles.buttonText}>Underline</Text>
+        </TouchableOpacity>
+      </View>
       <TouchableOpacity
-        style={styles.button}
+        style={isNoteValid ? styles.button : styles.buttonDisabled}
         onPress={() => {
+          if (!isNoteValid) return;
+
           if (typeof index === "number") {
             navigation.navigate("Page1", { updatedNote: note, index });
           } else {
             navigation.navigate("Page1", { note });
           }
         }}
+        disabled={!isNoteValid}
       >
         <Text style={styles.buttonText}>Save Note</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#1F1F1F",
-    padding: 15,
-  },
-  headerText: {
-    fontSize: 24,
-    color: "#FFFFFF",
-  },
-  noteContainer: {
-    backgroundColor: "#1F1F1F",
-    padding: 15,
-    marginVertical: 5,
-    marginHorizontal: 10,
-    borderRadius: 10,
-    elevation: 1,
-  },
-  noteHeader: {
-    fontSize: 18,
-    color: "#FFFFFF",
-  },
-  input: {
-    backgroundColor: "#333333",
-    borderColor: "#555555",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    margin: 10,
-    fontSize: 16,
-    color: "#FFFFFF",
-    height: 50,
-  },
-  page2Container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    paddingTop: 15,
-  },
-  detailsInput: {
-    backgroundColor: "#333333",
-    borderColor: "#555555",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    margin: 10,
-    fontSize: 16,
-    height: 120,
-    textAlignVertical: "top",
-    color: "#FFFFFF",
-  },
-  button: {
-    backgroundColor: "#444444",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    margin: 10,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-  },
-  deleteButton: {
-    backgroundColor: "red",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "flex-end",
-    width: 100,
-    height: "100%",
-  },
-  deleteText: {
-    color: "white",
-    padding: 20,
-  },
-});
