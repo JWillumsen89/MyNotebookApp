@@ -84,9 +84,9 @@ const styles = StyleSheet.create({
     height: 70,
     backgroundColor: "red",
     borderRadius: 10,
-    width: "30%", // 30% of parent width
-    justifyContent: "center", // Vertically center
-    alignItems: "center", // Horizontally center
+    width: "30%",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 15,
     marginVertical: 5,
     marginHorizontal: 10,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   noteHeader: {
     fontSize: 18,
     color: "#FFFFFF",
-    flexShrink: 1, // Allow the text to shrink if required
+    flexShrink: 1,
   },
   deleteText: {
     color: "white",
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   buttonDisabled: {
-    backgroundColor: "#777777", // Light gray color to indicate disabled
+    backgroundColor: "#777777",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -118,8 +118,8 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   formattingButtonsContainer: {
-    flexDirection: "row", // To layout the buttons in a single row
-    justifyContent: "space-around", // To evenly space the buttons
+    flexDirection: "row",
+    justifyContent: "space-around",
     margin: 10,
   },
 });
