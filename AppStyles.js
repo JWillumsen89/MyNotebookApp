@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     height: 50,
   },
-  page2Container: {
+  createNoteScreenContainer: {
     flex: 1,
     backgroundColor: "#121212",
     paddingTop: 15,
