@@ -124,7 +124,7 @@ const MainScreen = ({ navigation, route }) => {
         const notesArray = [];
         snapshot.forEach((doc) => {
           const noteData = doc.data();
-          noteData.id = doc.id; // Add the document ID to noteData for later usage
+          noteData.id = doc.id;
           notesArray.push(noteData);
         });
         setList(notesArray);
