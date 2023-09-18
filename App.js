@@ -6,13 +6,14 @@ import CreateNoteScreen from "./CreateNoteScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+
 export default function App() {
   const Stack = createNativeStackNavigator();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Page1">
+        <Stack.Navigator initialRouteName="MainScreen">
           <Stack.Screen
             name="MainScreen"
             component={MainScreen}
